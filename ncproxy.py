@@ -271,7 +271,7 @@ class ssh_server(paramiko.ServerInterface):
             self.srv_tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.srv_tcpsock.connect((url.hostname, url.port or 830))
             self.srv_transport = paramiko.Transport(self.srv_tcpsock)
-            self.srv_transport.connect(username=username, password=password)
+            self.srv_transport.connect(hostkey=server_host_key, pkey=client_private_key,username=username, password=password)
 
         except Exception as e:
             # Should be either of the following:
@@ -289,12 +289,29 @@ class ssh_server(paramiko.ServerInterface):
 
     def check_auth_publickey(self, username, key):
         log.debug("ssh_server.check_auth_publickey()")
-        log.critical('Public key authentication is NOT supported')
-        return paramiko.AUTH_FAILED
+        try:
+            self.srv_tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.srv_tcpsock.connect((url.hostname, url.port or 830))
+            self.srv_transport = paramiko.Transport(self.srv_tcpsock)
+            self.srv_transport.connect(hostkey=server_host_key, pkey=client_private_key,username=username)
+
+        except Exception as e:
+            # Should be either of the following:
+            #   paramiko.BadHostKeyException
+            #   paramiko.AuthenticationException
+            #   paramiko.SSHException
+            #   socket.error
+            log.critical('Server session setup/authentication failed: %s', str(e))
+            log.debug(''.join(traceback.format_exception(*sys.exc_info())))
+            self.srv_transport.close()
+            self.srv_tcpsock.close()
+            return paramiko.AUTH_FAILED
+
+        return paramiko.AUTH_SUCCESSFUL
 
     def get_allowed_auths(self, username):
         log.debug("ssh_server.get_allowed_auths(username=%s)", username)
-        return 'password'
+        return 'publickey,password'
 
     def check_channel_shell_request(self, channel):
         log.debug("ssh_server.check_channel_shell_request()")
@@ -337,6 +354,13 @@ if __name__ == '__main__':
 
     group = parser.add_argument_group()
     group.add_argument('--patch', metavar='filename', type=argparse.FileType('r'), help='Patch NETCONF messages (default: <none>)')
+
+    group = parser.add_argument_group()
+    group.add_argument("--clientprivatekey", metavar='filename', type=argparse.FileType('r'), help='client RSA private key file (default: <none>)')
+    group.add_argument("--proxyhostkey", metavar='filename', type=argparse.FileType('r'), help='proxy private host key file (default: <none>)')
+    group.add_argument('--proxyhostkeyalg', metavar='RSA ECDSA', default="RSA", type=str, help='proxy host key algorithm')
+    group.add_argument("--serverhostkey", metavar='filename', type=argparse.FileType('r'), help='server private host key file (default: <none>)')
+    group.add_argument('--serverhostkeyalg', metavar='RSA ECDSA', default="RSA", type=str, help='server host key algorithm')
 
     group = parser.add_argument_group()
     group.add_argument('--port', metavar='tcpport', type=int, default=830, help='TCP-port ncproxy is listening')
@@ -446,10 +470,33 @@ if __name__ == '__main__':
         log.debug(''.join(traceback.format_exception(*sys.exc_info())))
         sys.exit(1)
 
-    # --- handler for incoming client connections ----------------------------
-    host_key = paramiko.RSAKey.generate(2048)
-    log.debug('Server Key: %s', binascii.hexlify(host_key.get_fingerprint()))
+    # --- client private key -------------------------------------------------
+    client_private_key = None
+    if options.clientprivatekey is not None:
+        client_private_key = paramiko.RSAKey.from_private_key_file(options.clientprivatekey.name)
+        log.debug('client private key: %s', binascii.hexlify(client_private_key.get_fingerprint()))
 
+    # --- server host key
+    server_host_key = None
+    if options.serverhostkey is not None:
+        if options.serverhostkeyalg == "ECDSA":
+            server_host_key = paramiko.ECDSAKey.from_private_key_file(options.serverhostkey.name)
+        else:
+            server_host_key = paramiko.RSAKey.from_private_key_file(options.serverhostkey.name)
+        log.debug('server host Key: %s', binascii.hexlify(server_host_key.get_fingerprint()))
+
+    # --- proxy host key
+    if options.proxyhostkey is None:
+        log.debug('Generating new host key')
+        proxy_host_key = paramiko.RSAKey.generate(2048)
+    else:
+        if options.proxyhostkeyalg == "ECDSA":
+            proxy_host_key = paramiko.ECDSAKey.from_private_key_file(options.proxyhostkey.name)
+        else:
+            proxy_host_key = paramiko.RSAKey.from_private_key_file(options.proxyhostkey.name)
+    log.debug('proxy host Key: %s', binascii.hexlify(proxy_host_key.get_fingerprint()))
+
+    # --- handler for incoming client connections ----------------------------
     while True:
         try:
             client, addr = sock.accept()
@@ -465,7 +512,7 @@ if __name__ == '__main__':
         try:
             t = paramiko.Transport(client)
             t.load_server_moduli()
-            t.add_server_key(host_key)
+            t.add_server_key(proxy_host_key)
             t.set_subsystem_handler('netconf', ncHandler)
             t.start_server(server=ssh_server())
         except Exception as e:

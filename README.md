@@ -8,8 +8,9 @@ point of view ncproxy acts as client and from the NETCONF client point of view i
 acts as server. All hello messages, RPC requests, RPC responses and notification
 messages are subject of logging.
 
-In the current version, only NETCONF over SSHv2 using password authentication
-is supported. Both framing methods end-of-message-framing (base1:0) and chunked
+It currently supports either password authentication, or public key authentication
+(the latter using RSA for the client, and either RSA or ECDSA for the server)
+Both framing methods end-of-message-framing (base1:0) and chunked
 framing (base1:1) are supported. Username and password are provided by the NETCONF
 client while ncproxy is reusing this information to get connectivity towards to server.
 
@@ -88,28 +89,50 @@ Use the '--help' option to get usage information:
 $ ./ncproxy.py --help
 usage: ncproxy.py [-h] [--version] [-v] [-d] [--logfile filename]
                   [--serverlog filename] [--clientlog filename]
-                  [--patch filename] [--port tcpport]
+                  [--patch filename] [--clientprivatekey filename]
+                  [--proxyhostkey filename] [--proxyhostkeyalg RSA ECDSA]
+                  [--serverhostkey filename] [--serverhostkeyalg RSA ECDSA]
+                  [--port tcpport]
                   netconf://<hostname>[:port]
 
 optional arguments:
-  -h, --help                   show this help message and exit
-  --version                    show program's version number and exit
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
 
-  -v, --verbose                enable logging
-  -d, --debug                  enable ssh-lib logging
-  --logfile filename           trace/debug log (default: <stderr>)
-  --serverlog filename         server log (default: <stdout>)
-  --clientlog filename         client log (default: <stdout>)
+  -v, --verbose         enable logging
+  -d, --debug           enable ssh-lib logging
+  --logfile filename    trace/debug log (default: <stderr>)
+  --serverlog filename  server log (default: <stdout>)
+  --clientlog filename  client log (default: <stdout>)
 
-  --patch filename             Patch NETCONF messages (default: <none>)
+  --patch filename      Patch NETCONF messages (default: <none>)
 
-  --port tcpport               TCP-port ncproxy is listening
-  netconf://<hostname>[:port]  Netconf over SSH server
+  --clientprivatekey filename
+                        client RSA private key file (default: <none>)
+  --proxyhostkey filename
+                        proxy private host key file (default: <none>)
+  --proxyhostkeyalg RSA ECDSA
+                        proxy host key algorithm
+  --serverhostkey filename
+                        server private host key file (default: <none>)
+  --serverhostkeyalg RSA ECDSA
+                        server host key algorithm
+
+  --port tcpport        TCP-port ncproxy is listening
+  netconf://<hostname>[:port]
+                        Netconf over SSH server
 ```
 
 Example, using patching and enable highest logging level:
 ```
-$ ./ncproxy.py --patch patch03.json -vvvvv 135.227.236.97:830
+$ ./ncproxy.py --patch patch03.json --clientprivatekey ~/client/ssh/id_rsa --proxyhostkey ~/server/ssh/id_ecdsa --proxyhostkeyalg ECDSA --serverhostkey ~/server/ssh/id_ecdsa --serverhostkeyalg ECDSA id-vvvvv 135.227.236.97:830
 17/09/05 11:08:24,38  INFO     Listening for client connection ...
 17/09/05 11:08:26,799 DEBUG    Server Key: f2b3c60ea34bf2cd5bd1e1d8c0203228
 ```
+
+When no client key is provided, authentication falls pack to password.
+When no proxy key is provided, the proxy will generate a new key for itself.
+The proxy key may or may not be the same as the server.
+The server key, when provided is used to authenticate the server in the proxy to server
+connection.
+
