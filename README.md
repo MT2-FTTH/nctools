@@ -44,7 +44,7 @@ message exchange:
     {
       "match": "<capability>urn:ietf:params:netconf:base:1.1</capability>",
       "patch": "<!-- base:1.1 removed -->"
-    }    
+    }
   ],
   "client-msg-modifier": [
     {
@@ -62,7 +62,7 @@ Example patch02.json is replaces rpc-error messages with rpc-reply/ok responses:
   "server-msg-modifier": [
     {
       "match": "[\\s\\S]+(message-id=\"\\d+\")[\\s\\S]+<rpc-error>[\\s\\S]+",
-      "patch": "<rpc-reply \\1 xmlns=\"urn:ietf:params:xml:ns:netconf:base:1.0\"><ok/></rpc-reply>"     
+      "patch": "<rpc-reply \\1 xmlns=\"urn:ietf:params:xml:ns:netconf:base:1.0\"><ok/></rpc-reply>"
     }
   ],
   "client-msg-modifier": [],
@@ -112,11 +112,11 @@ optional arguments:
   --proxyhostkey filename
                         proxy private host key file (default: <none>)
   --proxyhostkeyalg RSA ECDSA
-                        proxy host key algorithm
+                        proxy host key algorithm (<default>: <RSA>)
   --serverhostkey filename
                         server private host key file (default: <none>)
   --serverhostkeyalg RSA ECDSA
-                        server host key algorithm
+                        server host key algorithm (<default>: <RSA>)
 
   --port tcpport        TCP-port ncproxy is listening
   netconf://<hostname>[:port]
@@ -125,7 +125,7 @@ optional arguments:
 
 Example, using patching and enable highest logging level:
 ```
-$ ./ncproxy.py --patch patch03.json --clientprivatekey ~/client/ssh/id_rsa --proxyhostkey ~/server/ssh/id_ecdsa --proxyhostkeyalg ECDSA --serverhostkey ~/server/ssh/id_ecdsa --serverhostkeyalg ECDSA id-vvvvv 135.227.236.97:830
+$ ./ncproxy.py --patch patch03.json --clientprivatekey ~/client/ssh/id_rsa --proxyhostkey ~/server/ssh/id_ecdsa --proxyhostkeyalg ECDSA --serverhostkey ~/server/ssh/id_ecdsa --serverhostkeyalg ECDSA -vvvvv 135.227.236.97:830
 17/09/05 11:08:24,38  INFO     Listening for client connection ...
 17/09/05 11:08:26,799 DEBUG    Server Key: f2b3c60ea34bf2cd5bd1e1d8c0203228
 ```

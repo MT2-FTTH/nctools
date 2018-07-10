@@ -9,6 +9,7 @@
 #    1.1  [SW]  2017/09/05    improved logging, patching, auto-responses     #
 #    1.2  [SW]  2017/10/01    add support patch-files                        #
 #    1.3  [SW]  2017/12/01    propagate auth-errors, fix regexp              #
+#    1.4  [SB]  2018/10/06    add public key support                         #
 #                                                                            #
 #  Objective:                                                                #
 #    ncproxy is a transparent logging proxy for NETONF over SSH              #
@@ -17,16 +18,22 @@
 #    Licensed under the BSD license                                          #
 #    See LICENSE.md delivered with this project for more information.        #
 #                                                                            #
-#  Author:                                                                   #
+#  Authors:                                                                  #
 #    Sven Wisotzky                                                           #
 #    mail:  sven.wisotzky(at)nokia.com                                       #
 #                                                                            #
 #                                           (c) 2017 by Sven Wisotzky, Nokia #
+#                                                                            #
+#    Stephane Bryant                                                         #
+#    mail:  stephane.bryant(at)mt2.fr                                        #
+#                                                                            #
+#                                           (c) 2018 by Stephane Bryant, MT2 #
 ##############################################################################
 
 """
-NETCONF proxy in Python Version 1.2
+NETCONF proxy in Python Version 1.4
 Copyright (C) 2015-2017 Nokia. All Rights Reserved.
+Copyright (C) 2018 MT2. All Rights Reserved
 """
 
 import binascii
@@ -48,10 +55,10 @@ else:
     from urlparse import urlparse
 
 __title__ = "ncproxy"
-__version__ = "1.2"
+__version__ = "1.4"
 __status__ = "released"
-__author__ = "Sven Wisotzky"
-__date__ = "2017 October 1st"
+__author__ = "Stephane Bryant"
+__date__ = "2018 July 10"
 
 
 class ncHandler(paramiko.SubsystemHandler):
@@ -358,9 +365,9 @@ if __name__ == '__main__':
     group = parser.add_argument_group()
     group.add_argument("--clientprivatekey", metavar='filename', type=argparse.FileType('r'), help='client RSA private key file (default: <none>)')
     group.add_argument("--proxyhostkey", metavar='filename', type=argparse.FileType('r'), help='proxy private host key file (default: <none>)')
-    group.add_argument('--proxyhostkeyalg', metavar='RSA ECDSA', default="RSA", type=str, help='proxy host key algorithm')
+    group.add_argument('--proxyhostkeyalg', metavar='RSA ECDSA', default="RSA", type=str, help='proxy host key algorithm (default: <RSA>)')
     group.add_argument("--serverhostkey", metavar='filename', type=argparse.FileType('r'), help='server private host key file (default: <none>)')
-    group.add_argument('--serverhostkeyalg', metavar='RSA ECDSA', default="RSA", type=str, help='server host key algorithm')
+    group.add_argument('--serverhostkeyalg', metavar='RSA ECDSA', default="RSA", type=str, help='server host key algorithm (default: <RSA>)')
 
     group = parser.add_argument_group()
     group.add_argument('--port', metavar='tcpport', type=int, default=830, help='TCP-port ncproxy is listening')
