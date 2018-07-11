@@ -9,7 +9,7 @@ acts as server. All hello messages, RPC requests, RPC responses and notification
 messages are subject of logging.
 
 It currently supports either password authentication, or public key authentication
-(the latter using RSA for the client, and either RSA or ECDSA for the server)
+(the latter using RSA for the client, and either RSA or ECDSA for the server).  
 Both framing methods end-of-message-framing (base1:0) and chunked
 framing (base1:1) are supported. Username and password are provided by the NETCONF
 client while ncproxy is reusing this information to get connectivity towards to server.
@@ -112,11 +112,11 @@ optional arguments:
   --proxyhostkey filename
                         proxy private host key file (default: <none>)
   --proxyhostkeyalg RSA ECDSA
-                        proxy host key algorithm (<default>: <RSA>)
+                        proxy host key algorithm (default: <RSA>)
   --serverhostkey filename
                         server private host key file (default: <none>)
   --serverhostkeyalg RSA ECDSA
-                        server host key algorithm (<default>: <RSA>)
+                        server host key algorithm (default: <RSA>)
 
   --port tcpport        TCP-port ncproxy is listening
   netconf://<hostname>[:port]
@@ -130,9 +130,9 @@ $ ./ncproxy.py --patch patch03.json --clientprivatekey ~/client/ssh/id_rsa --pro
 17/09/05 11:08:26,799 DEBUG    Server Key: f2b3c60ea34bf2cd5bd1e1d8c0203228
 ```
 
-When no client key is provided, authentication falls pack to password.
-When no proxy key is provided, the proxy will generate a new key for itself.
-The proxy key may or may not be the same as the server.
+When no client key is provided, authentication falls pack to password.  
+When no proxy key is provided, the proxy will generate a new key for itself.  
+The proxy key may or may not be the same as the server.  
 The server key, when provided is used to authenticate the server in the proxy to server
-connection.
+connection.  
 
